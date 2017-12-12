@@ -73,6 +73,10 @@ public:
             }}
         });
     }
+
+    auto to_string(bool pretty=true) const {
+        return rl.log_data_.dump(pretty ? 4 : 0);
+    }
 };
 
 }
