@@ -75,7 +75,7 @@ public:
     }
 
     auto to_string(bool pretty=true) const {
-        return log_data_.dump(pretty ? 4 : 0);
+        return log_data_.dump(pretty ? 4 : -1);
     }
 };
 
