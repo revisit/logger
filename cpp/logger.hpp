@@ -36,7 +36,6 @@
 #include "json.hpp"
 using json = nlohmann::json;
 
-
 namespace revisit
 {
 class logger
@@ -52,13 +51,36 @@ public:
         log_data_["stop"] = stop;
     }
 
-    void add_group(const std::string & name, const std::string & type, double diameter) {
+    void add_sphere(const std::string & name, const std::string & type, double diameter) {
         log_data_["groups"].push_back({
             {"name", name},
             {"objs", {{
                 {"type", type},
                 {"color", "0x0000ff"},
                 {"diameter", diameter}
+            }} }
+        });
+    }
+
+    void add_box(const std::string & name, double x_size, double y_size, double z_size) {
+        log_data_["groups"].push_back({
+            {"name", name},
+            {"objs", {{
+                {"type", "box"},
+                {"color", "0x0000ff"},
+                {"scale", {x_size, y_size, z_size}}
+            }} }
+        });
+    }
+
+    void add_cylinder(const std::string & name, double radius, double height) {
+        log_data_["groups"].push_back({
+            {"name", name},
+            {"objs", {{
+                {"type", "cylinder"},
+                {"color", "0x0000ff"},
+                {"scale", {radius, radius, height}},
+                {"vertical", "z"}
             }} }
         });
     }
@@ -72,6 +94,15 @@ public:
                 {"quaternion", {qx, qy, qz, w}}
             }}
         });
+    }
+
+    void add_to_frame(const std::string & name,
+        double x, double y, double z,
+        double qx, double qy, double qz, double w) {
+        log_data_["frames"].back()[name] = {
+            {"position", {x, y, z}},
+            {"quaternion", {qx, qy, qz, w}}
+        };
     }
 
     auto to_string(bool pretty=true) const {
