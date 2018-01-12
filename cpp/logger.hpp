@@ -1,34 +1,4 @@
 
-// "groups": [
-//     {
-//         "name": "sphere-test",
-//         "objs": [
-//             {
-//                 "type": "sphere",
-//                 "color": "0x0000ff",
-//                 "radius": 100
-//             }
-//         ]
-//     }
-// ],
-// "step": 0.04,
-// "start": 0,
-// "stop": 0.04,
-// "frames": [
-//     {
-//         "sphere-test": {
-//             "position": [0, 0, 0],
-//             "quaternion": [1,0,0,1]
-//         }
-//     },
-//     {
-//         "sphere-test": {
-//             "position": [0, 0, 0],
-//             "quaternion": [1,0,0,1]
-//         }
-//     }
-// ]
-
 #ifndef REVISIT_LOGGER_HPP
 #define REVISIT_LOGGER_HPP
 
@@ -37,68 +7,58 @@
 using json = nlohmann::json;
 
 #include <unordered_map>
+#include <iostream>
 
 
 namespace revisit
 {
+
+struct triplet {
+    double x, y, z;
+};
+
 class logger
 {
 
-private:
+// private:
+public:
     json log_data_;
     std::unordered_map<std::string, std::array<double, 7>> positions_;
 
+    void add_object(const std::string & name, const std::string & type, const triplet & scale) {
+        log_data_["objects"].push_back({
+            { "name", name },
+            { "mesh", type },
+            { "scale", { scale.x, scale.y, scale.z } }
+        });
+    }
+
 public:
-    logger(double start, double step, double stop) {
-        log_data_["start"] = start;
-        log_data_["step"] = step;
-        log_data_["stop"] = stop;
+    logger(double step, double stop, const std::string & name = "") {
+        if (name != "") {
+            log_data_["name"] = name;
+        }
+
+        log_data_["timeStep"] = step;
+        log_data_["duration"] = stop;
     }
 
     void add_sphere(const std::string & name, double radius) {
-        log_data_["groups"].push_back({
-            {"name", name},
-            {"objs", {{
-                {"type", "sphere"},
-                {"color", "0x0000ff"},
-                {"radius", radius}
-            }} }
-        });
-    }
-
-    void add_box(const std::string & name, double x_size, double y_size, double z_size) {
-        log_data_["groups"].push_back({
-            {"name", name},
-            {"objs", {{
-                {"type", "box"},
-                {"color", "0xcccccc"},
-                {"scale", {x_size, y_size, z_size}}
-            }} }
-        });
-    }
-
-    void add_cylinder(const std::string & name, double radius, double height) {
-        log_data_["groups"].push_back({
-            {"name", name},
-            {"objs", {{
-                {"type", "cylinder"},
-                {"color", "0x0000ff"},
-                {"scale", {radius, radius, height}},
-                {"vertical", "z"}
-            }} }
-        });
+        add_object(name, "sphere", triplet{radius, radius, radius});
     }
 
     void add_ellipsoid(const std::string & name, double x_size, double y_size, double z_size) {
-        log_data_["groups"].push_back({
-            {"name", name},
-            {"objs", {{
-                {"type", "ellipsoid"},
-                {"color", "0xccccff"},
-                {"scale", {x_size, y_size, z_size}}
-            }} }
-        });
+        add_object(name, "sphere", triplet{x_size/2.0, y_size/2.0, z_size/2.0});
     }
+
+    void add_box(const std::string & name, double x_size, double y_size, double z_size) {
+        add_object(name, "cube", triplet{x_size, y_size, z_size});
+    }
+
+    void add_cylinder(const std::string & name, double radius, double height) {
+        add_object(name, "cylinder", triplet{radius, height, radius});
+    }
+
 
     void new_frame() {
         log_data_["frames"].push_back({});
@@ -110,8 +70,8 @@ public:
 
         if (enough_motion(name, x, y, z, qx, qy, qz, qw)) {
             log_data_["frames"].back()[name] = {
-                {"position", {x, y, z}},
-                {"quaternion", {qx, qy, qz, qw}}
+                { "t", {x, y, z}},
+                { "r", {qx, qy, qz, qw}}
             };
             positions_[name] = std::array<double, 7>{{x, y, z, qx, qy, qz, qw}};
         }
@@ -132,7 +92,9 @@ public:
     bool enough_motion(const std::string & name,
         double x, double y, double z,
         double qx, double qy, double qz, double qw,
-        double trans_tol = 1, double quat_tol = 0.01) {
+        double trans_tol = 0.01, double quat_tol = 0.01) {
+
+        // return true;
 
         return positions_.find(name) == positions_.end()
             || abs(x - positions_[name][0]) > trans_tol
